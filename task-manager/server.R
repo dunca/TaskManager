@@ -193,7 +193,7 @@ function(input, output, session) {
     taskProgressDt <- taskProgressChanges[[selectedTaskId]]
     
     # https://stackoverflow.com/questions/27082601/ggplot2-line-chart-gives-geom-path-each-group-consist-of-only-one-observation
-    ggplot(data=taskProgressDt, aes(x=as.character(Date), y=Progress, group=1)) + geom_line() + geom_point() + 
+    ggplot(data=taskProgressDt, aes(x=Date, y=Progress, group=1)) + geom_line() + geom_point() + 
       xlab("Date") + ylab("Task progress [%]") + ggtitle(paste("Progress in time for task #", selectedTaskId)) +
       scale_y_continuous(breaks=round(seq(min(taskProgressDt$Progress), max(taskProgressDt$Progress), by=10), 0))
   })

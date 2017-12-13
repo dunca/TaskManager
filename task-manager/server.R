@@ -118,7 +118,7 @@ function(input, output, session) {
       # update the worker selection menu in "Per worker plots"
       # taskCount <- nrow(tasks)
       # selected <- if (taskCount == 0) NULL else tasks$TaskWorkerName[[1]]
-      updateSelectInput(session, "selWorker", choices=tasks$TaskWorkerName)
+      updateSelectInput(session, "selWorker", choices=unique(tasks$TaskWorkerName))
 
       # if there are no tasks, update the plot placeholder in "Per worker plots"
       output$uiNoTasksPerWorkerPlot <- renderUI({

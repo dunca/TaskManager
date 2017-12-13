@@ -1,0 +1,1 @@
+legalResponsibles <- list("ML", "DM", "RJ")

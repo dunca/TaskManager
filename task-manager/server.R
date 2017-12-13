@@ -4,7 +4,7 @@ library(DT)
 library(ggplot2)
 
 # TODO
-# update filtering menus on all sessions
+# 
 # 
 #
 
@@ -12,7 +12,7 @@ source("helper_methods.r")
 
 lastTaskId <- 0;
 
-taskColumnNames <- c("ClientDescription", "TaskCategory", "TaskDescription", "TaskWorkerName", 
+taskColumnNames <- c("ClientDescription", "TaskCategory", "TaskDescription", "TaskWorkerName", "LegalResponsible",
                      "TaskStartDate", "TaskDeadline", "TaskProgress", "AuthorInfo", "Month", "TaskId")
 
 # https://stackoverflow.com/questions/32712301/create-empty-data-frame-with-column-names-by-assigning-a-string-vector
@@ -258,11 +258,12 @@ function(input, output, session) {
     
     lastTaskId <<- lastTaskId + 1
     taskId <- lastTaskId
-    
+
     newTask <- data.frame("ClientDescription" = input$txtClientInformation, "TaskCategory" = input$txtTaskCategory, 
-                       "TaskDescription" = input$txtTaskDescription, "TaskWorkerName" = input$txtWorkerName, 
-                       "TaskStartDate" = start, "TaskDeadline" = deadline, "TaskProgress" = input$sliderTaskProgress,
-                       "AuthorInfo" = authenticatedUser, "Month" = month, "TaskId"=taskId, stringsAsFactors=FALSE)
+                       "TaskDescription" = input$txtTaskDescription, "TaskWorkerName" = input$txtWorkerName,
+                       "LegalResponsible" = input$selLegalResponsible, "TaskStartDate" = start, "TaskDeadline" = deadline, 
+                       "TaskProgress" = input$sliderTaskProgress, "AuthorInfo" = authenticatedUser, "Month" = month, 
+                       "TaskId" = taskId, stringsAsFactors = FALSE)
      
     # http://www.dummies.com/programming/r/how-to-add-observations-to-a-data-frame-in-r/
     # https://stackoverflow.com/a/1236721

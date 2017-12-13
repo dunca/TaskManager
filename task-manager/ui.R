@@ -74,6 +74,13 @@ navbarPage(
     
     fluidRow(
       column(
+        3,
+        selectInput("selLegalResponsible", "Legal responsible", choices=legalResponsibles, selected = legalResponsibles[[1]])
+      )
+    ),
+
+    fluidRow(
+      column(
         6,
         bsButton("btnSubmitTask", "Submit", icon("upload"))
       )

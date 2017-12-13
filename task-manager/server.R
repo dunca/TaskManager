@@ -13,7 +13,7 @@ source("helper_methods.r")
 lastTaskId <- 0;
 
 taskColumnNames <- c("ClientDescription", "TaskCategory", "TaskDescription", "TaskWorkerName", "LegalResponsible",
-                     "TaskStartDate", "TaskDeadline", "TaskProgress", "AuthorInfo", "Month", "TaskId")
+                     "TaskStartDate", "TaskDeadline", "TaskProgress", "AuthorInfo", "Month", "TaskComment", "TaskId")
 
 # https://stackoverflow.com/questions/32712301/create-empty-data-frame-with-column-names-by-assigning-a-string-vector
 # give it a matrix, since colnames(x) does not work if the dataframe is empty
@@ -81,6 +81,20 @@ function(input, output, session) {
       taskProgressChanges[[selectedTaskId]] <<- rbind(taskProgressChanges_, newTaskChange)
       
       notifyTasksChanged(paste("Modifed progress for task with description'", selectedTask$TaskDescription, "'"))
+    }
+  )
+
+  # task comments submission button was pressed
+  observeEvent(
+    input$btnSubmitNewTaskComment,
+    {
+      newTaskComment <- input$txtNewTaskComment;
+
+      selectedTaskId <- getSelectedTaskRowId()
+      selectedTask <- getSelectedTask();
+
+      tasks[selectedTaskId,]$TaskComment <<- newTaskComment
+      notifyTasksChanged(paste("Modifed comment for task with description'", selectedTask$TaskDescription, "'"))
     }
   )
   
@@ -263,7 +277,7 @@ function(input, output, session) {
                        "TaskDescription" = input$txtTaskDescription, "TaskWorkerName" = input$txtWorkerName,
                        "LegalResponsible" = input$selLegalResponsible, "TaskStartDate" = start, "TaskDeadline" = deadline, 
                        "TaskProgress" = input$sliderTaskProgress, "AuthorInfo" = authenticatedUser, "Month" = month, 
-                       "TaskId" = taskId, stringsAsFactors = FALSE)
+                       "TaskComment" = "", "TaskId" = taskId, stringsAsFactors = FALSE)
      
     # http://www.dummies.com/programming/r/how-to-add-observations-to-a-data-frame-in-r/
     # https://stackoverflow.com/a/1236721

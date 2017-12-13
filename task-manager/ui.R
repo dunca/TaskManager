@@ -146,6 +146,19 @@ navbarPage(
           style="margin-top: 35px;",
           actionButton("btnRemoveTask", "Remove this task", icon("remove"))
         )
+      ),
+
+      fluidRow(
+        column(
+          3,
+          textAreaInput("txtNewTaskComment", "Comments")
+        ),
+
+        column(
+          1,
+          style="margin-top: 35px;",
+          actionButton("btnSubmitNewTaskComment", "Submit", icon("upload"))
+        )
       )
     )
   ),

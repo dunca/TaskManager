@@ -12,6 +12,8 @@ source("helper_methods.r")
 
 lastTaskId <- 0;
 
+managerAccounts <- data.frame(email = c("m1@r.com", "m2@r.com"), pass=c("123456", "123456"))
+
 taskColumnNames <- c("ClientDescription", "TaskCategory", "TaskDescription", "TaskWorkerName", "LegalResponsible",
                      "TaskStartDate", "TaskDeadline", "TaskProgress", "AuthorInfo", "Month", "TaskComment", "TaskId")
 
@@ -31,14 +33,25 @@ function(input, output, session) {
   observe({
     updateTaskSubmissionButtonState()
 
-    updateButton(session, "btnLogin", disabled = isNullOrEmpty(input$txtManagerCredentials))
+    updateButton(session, "btnLogin", disabled = isNullOrEmpty(input$txtManagerEmail) || isNullOrEmpty(input$txtManagerPassword))
   })
   
   # login button was pressed
   observeEvent(
     input$btnLogin,
     {
-      authenticatedUser <<- input$txtManagerCredentials
+      email <- input$txtManagerEmail
+      pass <- input$txtManagerPassword
+
+      if (!authenticate(email, pass)) {
+        output$footerMessageUi <- renderUI({
+          (h4("Invalid credentials", style="color: red;"))
+        })
+
+        return()
+      }
+
+      authenticatedUser <<- input$txtManagerEmail
       
       output$footerMessageUi <- renderUI({
         h4("Logged in as ", span(strong(authenticatedUser), style="color: green;"))
@@ -370,5 +383,21 @@ function(input, output, session) {
 
   myUpdateSelectInput = function(id, choices) {
     updateSelectInput(session, id, choices=choices)
+  }
+
+  authenticate = function(email, pass) {
+    accountCount <- nrow(managerAccounts)
+
+    for (i in 1:accountCount) {
+      pair <- managerAccounts[i,]
+      e <- pair[,1]
+      p <- pair[,2]
+
+      if (email == e && pass == p) {
+        return(TRUE)
+      }
+    }
+
+    return(FALSE)
   }
 }

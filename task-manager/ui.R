@@ -22,9 +22,19 @@ navbarPage(
       column(
         12,
         align="center",
-        textInput("txtManagerCredentials", "Manager credentials", placeholder = "John Doe")
-      ),
-      
+        textInput("txtManagerEmail", "Manager email", placeholder = "email@example.com")
+      )
+    ),
+
+    fluidRow(
+      column(
+        12,
+        align="center",
+        textInput("txtManagerPassword", "Manager password", placeholder = "my_password")
+      )
+    ),
+
+    fluidRow(
       column(
         12,
         align="center",
@@ -32,7 +42,7 @@ navbarPage(
       )
     )
   ),
-  
+
   tabPanel(
     "Add task",
     

@@ -11,6 +11,9 @@ library(DBI)
 
 dbName <- "tasks.db"
 dbTasksTableName = "tasks"
+
+# the prefix of task progress table names. Eg. the first tasks will have its progress stored in "taskProgress1"
+dbTaskProgressTablePrefix = "taskProgress"
 dbConnection <- dbConnect(RSQLite::SQLite(), dbName)
 
 source("helper_methods.r")
@@ -19,7 +22,9 @@ lastTaskId <- 0;
 
 managerAccounts <- data.frame(email = c("m1@r.com", "m2@r.com"), pass=c("123456", "123456"))
 
-if (dbTasksTableName %in% dbListTables(dbConnection)) {
+availableTables <- dbListTables(dbConnection)
+
+if (dbTasksTableName %in% availableTables) {
   tasks <- dbReadTable(dbConnection, dbTasksTableName)
 
   rowCount <- nrow(tasks)
@@ -44,8 +49,18 @@ if (dbTasksTableName %in% dbListTables(dbConnection)) {
   print("Task database is empty, created empty dataframe")
 }
 
-
 taskProgressChanges <- list()
+
+# read task progress tables into taskProgressChanges
+for (tableName in availableTables) {
+  if (startsWith(tableName, dbTaskProgressTablePrefix)) {
+    # extract the task id from the table name. Eg. taskProgress123 -> 123
+    currentTaskId <- as.numeric(gsub("[a-zA-Z]+(\\d+)$", "\\1", tableName))
+
+    # sucks, if taks ids don't start from 1, a lot of possitions will be unused
+    taskProgressChanges[[currentTaskId]] <- dbReadTable(dbConnection, tableName)
+  }
+}
 
 tasksChangedCounter <- 0;
 
@@ -112,13 +127,16 @@ function(input, output, session) {
       # selectedTask$TaskProgress <- newTaskProgress # not working?!
       tasks[selectedTaskId,]$TaskProgress <<- newTaskProgress
       
-      taskProgressChanges_ <- taskProgressChanges[[selectedTaskId]]
+      #taskProgressChanges_ <- taskProgressChanges[[selectedTaskId]]
+      taskProgressChanges_ <- taskProgressChanges[[selectedTask$TaskId]]
       newTaskChange <- data.frame(Date=as.character(Sys.Date()), Progress=newTaskProgress, stringsAsFactors = FALSE)
-      taskProgressChanges[[selectedTaskId]] <<- rbind(taskProgressChanges_, newTaskChange)
+      #taskProgressChanges[[selectedTaskId]] <<- rbind(taskProgressChanges_, newTaskChange)
+      taskProgressChanges[[selectedTask$TaskId]] <<- rbind(taskProgressChanges_, newTaskChange)
       
       notifyTasksChanged(paste("Modifed progress for task with description'", selectedTask$TaskDescription, "'"))
 
       updateTasksDatabaseTable()
+      dbWriteTable(dbConnection, getTaskProgressTableName(selectedTask$TaskId), newTaskChange, append=TRUE)
     }
   )
 
@@ -243,7 +261,8 @@ function(input, output, session) {
   })
 
   output$plotTaskProgress <- renderPlot({
-    selectedTaskId <- getSelectedTaskRowId()
+    #selectedTaskId <- getSelectedTaskRowId()
+    selectedTaskId <- getSelectedTask()$TaskId
     taskProgressDt <- taskProgressChanges[[selectedTaskId]]
     
     # https://stackoverflow.com/questions/27082601/ggplot2-line-chart-gives-geom-path-each-group-consist-of-only-one-observation
@@ -325,8 +344,11 @@ function(input, output, session) {
 
     #dbWriteTable(dbConnection, dbTasksTableName, newTask, append=TRUE)
     updateTasksDatabaseTable()
-      
-    taskProgressChanges[[length(taskProgressChanges) + 1]] <<- data.frame(Date=start, Progress=input$sliderTaskProgress, stringsAsFactors = FALSE)
+    
+    initialProgressDf <- data.frame(Date=start, Progress=input$sliderTaskProgress, stringsAsFactors = FALSE)
+    taskProgressChanges[[taskId]] <<- initialProgressDf
+
+    dbWriteTable(dbConnection, getTaskProgressTableName(taskId), initialProgressDf)
 
     notifyTasksChanged("New task added")
 
@@ -336,8 +358,14 @@ function(input, output, session) {
   # removes the currently selected task from the internal task dataframe
   removeSelectedTask = function() {
     selectedTaskId = getSelectedTaskRowId()
+
+    # delete task progress table
+    currentTaskId <- tasks[selectedTaskId,]$TaskId
+    dbRemoveTable(dbConnection, getTaskProgressTableName(currentTaskId))
+
     tasks <<- tasks[-c(selectedTaskId),]
-    taskProgressChanges[-c(selectedTaskId)]
+    # taskProgressChanges[-c(selectedTaskId)]
+    taskProgressChanges[currentTaskId] <- NULL
     
     notifyTasksChanged("Task removed")
 
@@ -436,5 +464,9 @@ function(input, output, session) {
   # overrides the "tasks" database table with the current "tasks" dataframe values
   updateTasksDatabaseTable = function() {
     dbWriteTable(dbConnection, dbTasksTableName, tasks, overwrite=TRUE)
+  }
+
+  getTaskProgressTableName = function(taskId) {
+    return(paste(dbTaskProgressTablePrefix, taskId, sep=""))
   }
 }

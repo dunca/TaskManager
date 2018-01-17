@@ -2,11 +2,16 @@ library(shiny)
 library(shinyBS)
 library(DT)
 library(ggplot2)
+library(DBI)
 
 # TODO
 # 
 # 
 #
+
+dbName <- "tasks.db"
+dbTasksTableName = "tasks"
+dbConnection <- dbConnect(RSQLite::SQLite(), dbName)
 
 source("helper_methods.r")
 
@@ -14,13 +19,31 @@ lastTaskId <- 0;
 
 managerAccounts <- data.frame(email = c("m1@r.com", "m2@r.com"), pass=c("123456", "123456"))
 
-taskColumnNames <- c("ClientDescription", "TaskCategory", "TaskDescription", "TaskWorkerName", "LegalResponsible",
+if (dbTasksTableName %in% dbListTables(dbConnection)) {
+  tasks <- dbReadTable(dbConnection, dbTasksTableName)
+
+  rowCount <- nrow(tasks)
+
+  # the table exists, and it's got rows
+  if (rowCount != 0) {
+    lastTaskId <- tasks[nrow(tasks),]$TaskId
+    print(paste("Read task database. Last task id is ", lastTaskId))
+  } else {
+    print("Read task database, but it has no rows")
+  }
+
+} else {
+  taskColumnNames <- c("ClientDescription", "TaskCategory", "TaskDescription", "TaskWorkerName", "LegalResponsible",
                      "TaskStartDate", "TaskDeadline", "TaskProgress", "AuthorInfo", "Month", "TaskComment", "TaskId")
 
-# https://stackoverflow.com/questions/32712301/create-empty-data-frame-with-column-names-by-assigning-a-string-vector
-# give it a matrix, since colnames(x) does not work if the dataframe is empty
-tasks <- data.frame(matrix(ncol = length(taskColumnNames), nrow = 0))
-colnames(tasks) <- taskColumnNames
+  # https://stackoverflow.com/questions/32712301/create-empty-data-frame-with-column-names-by-assigning-a-string-vector
+  # give it a matrix, since colnames(x) does not work if the dataframe is empty
+  tasks <- data.frame(matrix(ncol = length(taskColumnNames), nrow = 0))
+  colnames(tasks) <- taskColumnNames
+
+  print("Task database is empty, created empty dataframe")
+}
+
 
 taskProgressChanges <- list()
 
@@ -94,6 +117,8 @@ function(input, output, session) {
       taskProgressChanges[[selectedTaskId]] <<- rbind(taskProgressChanges_, newTaskChange)
       
       notifyTasksChanged(paste("Modifed progress for task with description'", selectedTask$TaskDescription, "'"))
+
+      updateTasksDatabaseTable()
     }
   )
 
@@ -108,6 +133,8 @@ function(input, output, session) {
 
       tasks[selectedTaskId,]$TaskComment <<- newTaskComment
       notifyTasksChanged(paste("Modifed comment for task with description'", selectedTask$TaskDescription, "'"))
+
+      updateTasksDatabaseTable()
     }
   )
   
@@ -295,6 +322,9 @@ function(input, output, session) {
     # http://www.dummies.com/programming/r/how-to-add-observations-to-a-data-frame-in-r/
     # https://stackoverflow.com/a/1236721
     tasks <<- rbind(tasks, newTask)
+
+    #dbWriteTable(dbConnection, dbTasksTableName, newTask, append=TRUE)
+    updateTasksDatabaseTable()
       
     taskProgressChanges[[length(taskProgressChanges) + 1]] <<- data.frame(Date=start, Progress=input$sliderTaskProgress, stringsAsFactors = FALSE)
 
@@ -312,6 +342,8 @@ function(input, output, session) {
     notifyTasksChanged("Task removed")
 
     updateFilteringMenus()
+
+    updateTasksDatabaseTable()
   }
   
   getSelectedTaskRowId = function() {
@@ -399,5 +431,10 @@ function(input, output, session) {
     }
 
     return(FALSE)
+  }
+
+  # overrides the "tasks" database table with the current "tasks" dataframe values
+  updateTasksDatabaseTable = function() {
+    dbWriteTable(dbConnection, dbTasksTableName, tasks, overwrite=TRUE)
   }
 }

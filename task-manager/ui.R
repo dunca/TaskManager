@@ -2,11 +2,11 @@ library(shiny)
 library(shinyBS)
 library(DT) # always last
 
-getNoTaskSelectedCondition <- function() {
+getTaskSelectedCondition <- function() {
   "typeof input.dtTasks_rows_selected  !== 'undefined' && input.dtTasks_rows_selected.length != 0"
 }
 
-getNoTasksAvailable <- function() {
+getTasksAvailableCondition <- function() {
   # https://rstudio.github.io/DT/shiny.html
   "typeof input.dtTasks_rows_all  !== 'undefined' && input.dtTasks_rows_all != 0"
 }
@@ -127,7 +127,7 @@ navbarPage(
     
     # https://stackoverflow.com/questions/37659214/r-shiny-conditional-panel-based-on-row-selected-in-datatable/
     conditionalPanel(
-      getNoTaskSelectedCondition(),
+      getTaskSelectedCondition(),
       hr(),
 
       fluidRow(
@@ -177,7 +177,7 @@ navbarPage(
     "Task progress",
     
     conditionalPanel(
-      getNoTaskSelectedCondition(),
+      getTaskSelectedCondition(),
       plotOutput("plotTaskProgress")
     ),
 
@@ -197,7 +197,7 @@ navbarPage(
       hr(),
       
       conditionalPanel(
-        getNoTasksAvailable(),
+        getTasksAvailableCondition(),
 
         fluidRow(
           column(
@@ -223,7 +223,7 @@ navbarPage(
       hr(),
 
       conditionalPanel(
-        getNoTasksAvailable(),
+        getTasksAvailableCondition(),
         plotOutput("plotWorkerTaskCount")
       ),
 
